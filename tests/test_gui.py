@@ -136,6 +136,15 @@ class GuiTests(unittest.TestCase):
         self.assertIn("攻击未得逞", self.text_of(self.app.result_text))
         self.assertNotIn("窃听到", self.text_of(self.app.view_text["Evil"]))  # Evil 试图替换密钥，但读不到任何明文
 
+    def test_bitflip_displays_invalid_utf8_as_escaped_bytes(self):
+        self.select("bitflip")
+        self.app.run_all_steps()
+        bob_view = self.text_of(self.app.view_text["Bob"])
+        result_view = self.text_of(self.app.result_text)
+        self.assertIn("[非 UTF-8 数据，非法字节已转义]", bob_view)
+        self.assertIn(r"\x", bob_view)
+        self.assertNotIn("\ufffd", bob_view + result_view)
+
     def test_normal_keys_match(self):
         self.select("defended-normal")
         self.app.run_all_steps()

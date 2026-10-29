@@ -64,6 +64,15 @@ class WireFormatTests(unittest.TestCase):
         self.assertIn("无法解析", m.describe(b"garbage"))
         self.assertIn("DATA", m.describe(m.encode(m.Message(m.DATA, "A", "B", {"ct": b"\x01" * 40}))))
 
+    def test_invalid_utf8_is_escaped_without_replacement_glyphs(self):
+        self.assertEqual(m.decode_text("中文".encode("utf-8")), "中文")
+        rendered = m.decode_text(b"\xff\xfehello")
+        self.assertIn(r"\xff\xfe", rendered)
+        self.assertIn("hello", rendered)
+        self.assertNotIn("\ufffd", rendered)
+        self.assertIn(r"\x00", m.decode_text(b"\x00"))
+        self.assertIn(r"\x15", m.decode_text(b"\x15"))
+
 
 class _Sink:
     def __init__(self, name):

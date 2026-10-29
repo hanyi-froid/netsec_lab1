@@ -10,6 +10,7 @@ bytes 字段以 {"hex": "..."} 表示。选择 JSON 是为了让界面里的报�
 """
 
 import json
+import unicodedata
 from dataclasses import dataclass, field
 
 KEX_INIT = "KEX_INIT"    # 握手第 1 条：发起方 DH 公钥 (+ 签名)
@@ -93,6 +94,20 @@ def _short(value, limit: int = 8) -> str:
         head = value[:limit].hex()
         return f"{head}…({len(value)}B)" if len(value) > limit else head or "∅"
     return str(value)
+
+
+def decode_text(data: bytes) -> str:
+    """显示 UTF-8 明文；损坏字节与控制字符均转义，避免替换字符或不可见字符乱码。"""
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        text = "[非 UTF-8 数据，非法字节已转义] " + data.decode("utf-8", errors="backslashreplace")
+    return "".join(
+        f"\\x{ord(char):02x}" if unicodedata.category(char) == "Cc" and ord(char) <= 0xFF
+        else f"\\u{ord(char):04x}" if unicodedata.category(char) == "Cc"
+        else char
+        for char in text
+    )
 
 
 def describe(data: bytes) -> str:

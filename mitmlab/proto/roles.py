@@ -9,7 +9,7 @@ from . import events as ev
 from .channel import Delivery, Network
 from .handshake import (HandshakeError, build_init, build_reply, derive_keys,
                         process_init, process_reply)
-from .messages import ALERT, DATA, KEX_INIT, KEX_REPLY, Message, WireError, decode, describe, encode
+from .messages import ALERT, DATA, KEX_INIT, KEX_REPLY, Message, WireError, decode, decode_text, describe, encode
 from .profiles import SecurityProfile
 from .session import Session, SessionError
 
@@ -152,6 +152,6 @@ class Party(Endpoint):
         except SessionError as exc:
             self._alert(f"数据包被拒绝：{type(exc).__name__}（{exc}）")
             return
-        text = plaintext.decode("utf-8", errors="replace")
+        text = decode_text(plaintext)
         self.received.append(text)
         self.log.add(self.name, ev.APP, f"解密得到：{text}", text=text)

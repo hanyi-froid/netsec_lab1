@@ -94,6 +94,9 @@ class AttackTests(unittest.TestCase):
         r = run("bitflip")
         self.assertEqual(len(r.bob_received), 1)
         self.assertNotEqual(r.bob_received[0], ALICE_TEXT)
+        self.assertIn("[非 UTF-8 数据，非法字节已转义]", r.bob_received[0])
+        self.assertNotIn("\ufffd", r.bob_received[0])
+        self.assertIn(r"\x", r.bob_received[0])
         self.assertEqual(r.alerts, [])
 
     def test_replay_without_protection_is_accepted_twice(self):

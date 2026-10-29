@@ -16,7 +16,7 @@ from typing import Callable, Optional
 from . import events as ev
 from .channel import Delivery, Network
 from .handshake import HandshakeError, build_init, build_reply, derive_keys
-from .messages import DATA, KEX_INIT, KEX_REPLY, Message, WireError, decode, describe, encode
+from .messages import DATA, KEX_INIT, KEX_REPLY, Message, WireError, decode, decode_text, describe, encode
 from .profiles import SecurityProfile
 from .roles import Endpoint
 from .session import Session, SessionError
@@ -176,7 +176,7 @@ class Evil(Endpoint):
         """解密一侧的数据包，（可选）篡改，再用另一侧的密钥重新加密转发。"""
         src_session, dst_session = self.sessions[d.src], self.sessions[d.dst]
         try:
-            plaintext = src_session.open(msg.fields).decode("utf-8", errors="replace")
+            plaintext = decode_text(src_session.open(msg.fields))
         except SessionError as exc:
             self.log.add(self.name, ev.INFO, f"无法解密该数据包：{exc}")
             self.forward(d)
@@ -210,7 +210,7 @@ class Evil(Endpoint):
             self._inject(ALICE, reply, "冒充 Bob 回复握手，不转发给真正的 Bob")
         elif msg.type == DATA and d.src == ALICE and ALICE in self.sessions:
             try:
-                plaintext = self.sessions[ALICE].open(msg.fields).decode("utf-8", errors="replace")
+                plaintext = decode_text(self.sessions[ALICE].open(msg.fields))
             except SessionError:
                 return
             self.spied.append((f"{d.src}→{BOB}", plaintext))
