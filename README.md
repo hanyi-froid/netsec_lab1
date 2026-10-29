@@ -55,6 +55,16 @@ docs/            实验说明文档
 - 三档防御配置：无防御 / 仅 HMAC / 完整防御（签名认证 DH + HMAC + 序号）。
 - 13 个预置场景（`mitmlab/proto/scenarios.py`）：正常通信、密钥替换、冒充、位翻转、重放，以及各自的防御与局限对比。
 
+## 命令行用法
+
+```powershell
+python -m mitmlab list                 # 列出全部场景
+python -m mitmlab run mitm             # 运行场景，打印各角色行为与结论
+python -m mitmlab run mitm --step      # 单步：每次回车推进一步
+python -m mitmlab run defended-mitm    # 同一攻击在完整防御下被阻止
+python -m mitmlab all                  # 全部场景对照表
+```
+
 ## 开发进度
 
 随各阶段提交逐步更新，当前：密码算法、协议层与攻防场景完成；CLI、GUI、Bonus 与实验文档进行中。

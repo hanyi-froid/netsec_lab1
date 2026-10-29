@@ -76,7 +76,7 @@ class Evil(Endpoint):
         self.network.send(self.name, dst, encode(msg))
 
     def on_wire(self, d: Delivery) -> None:
-        self.log.add(self.name, ev.INTERCEPT, f"截获 #{d.number} {d.src}→{d.dst}：{describe(d.data)}")
+        self.log.add(self.name, ev.INTERCEPT, f"#{d.number} {d.src}→{d.dst}：{describe(d.data)}")
         try:
             msg = decode(d.data)
         except WireError:

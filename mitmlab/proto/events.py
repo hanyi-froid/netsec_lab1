@@ -29,6 +29,19 @@ class Event:
     data: dict = field(default_factory=dict)
 
 
+# 事件类别的中文标签，CLI 与 GUI 共用
+KIND_LABELS = {
+    SEND: "发送", RECV: "接收", INFO: "信息", KEY: "密钥", APP: "应用", INTERCEPT: "截获",
+    FORWARD: "转发", MODIFY: "篡改", REPLAY: "重放", SPY: "窃听", ALERT: "告警",
+    NET: "网络", FAULT: "故障",
+}
+
+
+def format_event(e: Event) -> str:
+    """把事件渲染为一行文本。"""
+    return f"[{e.index:03d}] {e.actor:<5} {KIND_LABELS.get(e.kind, e.kind)}  {e.text}"
+
+
 class EventLog:
     """事件容器，支持订阅者回调（GUI 用它实时刷新）。"""
 

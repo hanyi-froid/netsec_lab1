@@ -26,7 +26,7 @@ class Endpoint:
     def emit(self, dst: str, msg: Message) -> None:
         """序列化并发送：这是角色把报文放上线路的唯一途径。"""
         data = encode(msg)
-        self.log.add(self.name, ev.SEND, f"发送 {describe(data)}", message=msg.type, dst=dst)
+        self.log.add(self.name, ev.SEND, describe(data), message=msg.type, dst=dst)
         self.network.send(self.name, dst, data)
 
     def on_wire(self, delivery: Delivery) -> None:  # pragma: no cover - 由子类实现
@@ -98,7 +98,7 @@ class Party(Endpoint):
         except WireError as exc:
             self._alert(f"收到无法解析的报文，已丢弃（{exc}）")
             return
-        self.log.add(self.name, ev.RECV, f"收到 {describe(delivery.data)}")
+        self.log.add(self.name, ev.RECV, describe(delivery.data))
         if msg.type == KEX_INIT:
             self._on_kex_init(msg)
         elif msg.type == KEX_REPLY:
