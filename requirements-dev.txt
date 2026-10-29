@@ -1,0 +1,4 @@
+-r requirements.txt
+# 仅用于测试：与自实现算法做交叉对照（核心包 mitmlab 不得引用）
+pycryptodome==4.2.0
+pytest>=8.0

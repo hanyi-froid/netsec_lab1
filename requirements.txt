@@ -1,0 +1,2 @@
+# 运行时无第三方依赖：所有密码算法、协议与 GUI（tkinter）均基于 Python 标准库自行实现。
+# 如需运行测试，请安装 requirements-dev.txt。

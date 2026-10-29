@@ -1,0 +1,20 @@
+.venv/
+venv/
+env/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.vscode/
+.idea/
+
+# 实验器运行时生成的结果文件
+results/
+*.log
