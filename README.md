@@ -76,6 +76,19 @@ python -m mitmlab gui
 - 中间是 Alice | Evil | Bob 三泳道时序图（红色箭头为被 Evil 篡改/伪造的报文），其下是三方各自的视角与会话密钥指纹，右侧是事件日志与结果判定。
 - 「对比全部场景」在后台线程运行全部场景并弹出对照表。RSA 密钥也在后台线程生成；后台任务统一通过 `queue.Queue` + `root.after()` 回到主线程刷新界面。
 
+## 附加功能（Bonus）
+
+```powershell
+python -m mitmlab matrix                       # 4 种攻击 × 3 档防御的对比矩阵
+python -m mitmlab experiments --csv results    # 对比矩阵 + 重复稳定性 + 网络故障注入，并导出 CSV
+python -m mitmlab perf [--quick]               # 算法吞吐、RSA/DH 耗时、握手开销对比
+```
+
+- 多种攻击与防御方法的对比：`matrix` 显示“仅 HMAC”只能挡位翻转、挡不住密钥替换/冒充/重放，只有签名认证 DH + 序号才能全部阻止。
+- 重放攻击及防御：`replay`、`mac-vs-replay`、`defended-replay` 三个场景。
+- 单步执行与可视化：CLI `--step`、GUI 单步/自动播放/泳道图。
+- 自动化实验、异常情况模拟、性能分析：`experiments` 与 `perf`（丢包/重复/乱序由带种子的伪随机数注入，可复现）。
+
 ## 开发进度
 
 随各阶段提交逐步更新，当前：密码算法、协议层与攻防场景完成；CLI、GUI、Bonus 与实验文档进行中。
