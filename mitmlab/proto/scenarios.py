@@ -198,3 +198,9 @@ class World:
 def run_scenario(scenario_id: str, **kwargs) -> ScenarioResult:
     """按 id 运行一个预置场景并返回结果。"""
     return World(SCENARIO_BY_ID[scenario_id], **kwargs).run()
+
+
+def run_all(keyring: KeyRing = None, rsa_bits: int = 2048, faults: FaultConfig = None) -> list:
+    """依次运行全部预置场景，返回 [(场景, 结果), ...]，供对照表与自动化实验使用。"""
+    keyring = keyring or default_keyring(rsa_bits)
+    return [(s, World(s, keyring=keyring, faults=faults).run()) for s in SCENARIOS]

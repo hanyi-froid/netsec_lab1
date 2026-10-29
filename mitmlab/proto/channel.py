@@ -87,7 +87,7 @@ class Network:
         d = self._queue.popleft()
         self.delivered.append(d)
         self.log.add("网络", ev.NET, f"#{d.number} {d.src}→{d.hop}  {describe(d.data)}",
-                     src=d.src, hop=d.hop, dst=d.dst, size=len(d.data), delivery=d.number)
+                     src=d.src, hop=d.hop, dst=d.dst, size=len(d.data), delivery=d.number, wire=d.data)
         self._nodes[d.hop].on_wire(d)
         return d
 
