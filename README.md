@@ -6,6 +6,16 @@
 
 > 本项目在 AI 辅助下开发，开发过程记录见 `docs/` 下的实验说明文档。
 
+## 快速开始
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1          # macOS/Linux: source .venv/bin/activate
+pip install -r requirements-dev.txt   # 只运行程序可跳过；测试需要
+python -m mitmlab gui                 # 图形界面（无图形环境用：python -m mitmlab all）
+python -m pytest -q                   # 运行全部测试
+```
+
 ## 环境
 
 - Python 3.10+（开发环境 3.13，tkinter 随官方 Python 安装包提供）
@@ -89,6 +99,10 @@ python -m mitmlab perf [--quick]               # 算法吞吐、RSA/DH 耗时、
 - 单步执行与可视化：CLI `--step`、GUI 单步/自动播放/泳道图。
 - 自动化实验、异常情况模拟、性能分析：`experiments` 与 `perf`（丢包/重复/乱序由带种子的伪随机数注入，可复现）。
 
-## 开发进度
+## 文档与说明
 
-随各阶段提交逐步更新，当前：密码算法、协议层与攻防场景完成；CLI、GUI、Bonus 与实验文档进行中。
+- 完整实验说明文档：[docs/实验说明文档.md](docs/实验说明文档.md)（运行环境、功能实现与测试说明、开发过程与 AI 使用记录）。
+- 红线：`mitmlab/` 内不调用任何密码库，`tests/test_no_banned_imports.py` 用 AST 扫描自动检查；pycryptodome、`hashlib`、`hmac` 只在测试中用于对照。
+- 说明：算法为纯 Python 的教学实现，非常数时间，不可用于生产环境。
+
+![无防御的密钥替换](docs/img/gui-mitm.png)

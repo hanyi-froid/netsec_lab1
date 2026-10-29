@@ -510,6 +510,10 @@ class App:
                 _, lane, text, color = op
                 item = c.create_text(xs[lane], y, text=text, fill=color, font=self.small_font)
                 x1, y1, x2, y2 = c.bbox(item)
+                dx = max(6 - x1, 0) or min(width - 6 - x2, 0)  # 靠边泳道的注释框不要超出画布
+                if dx:
+                    c.move(item, dx, 0)
+                    x1, y1, x2, y2 = c.bbox(item)
                 box = c.create_rectangle(x1 - 4, y1 - 2, x2 + 4, y2 + 2, fill="white", outline=color)
                 c.tag_raise(item, box)
         c.configure(scrollregion=(0, 0, width, bottom))
