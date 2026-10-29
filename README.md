@@ -47,6 +47,14 @@ docs/            实验说明文档
 | `mitmlab/crypto/rsa.py` | RSA 密钥生成（CRT）、PKCS#1 v1.5 + SHA-256 DigestInfo 签名/验签 | 教科书示例；DigestInfo/EM 结构；与 pycryptodome `pkcs1_15` 签名字节一致、互相验签；伪造填充被拒 |
 | `mitmlab/crypto/dh.py` | RFC 3526 1536 位 MODP 的 DH、公钥合法性校验 | 用 Machin 公式独立计算 π 校验素数公式；安全素数；与内置 `pow` 对照；0/1/p-1/非子群公钥被拒 |
 
+## 通信协议与攻防场景（mitmlab/proto）
+
+- 报文经 `messages.encode/decode` 序列化为 JSON bytes，`Network` 只接受 bytes，Evil 是所有流量的网关。
+- 握手：DH（RFC 3526）+ 可选 RSA 签名（STS 风格，签名绑定身份、DH 公钥与双方 nonce）；会话密钥由 HKDF 派生，A→B / B→A 方向独立。
+- 数据包：`seq ‖ IV ‖ AES-128-CBC ‖ HMAC-SHA256`（先加密后 MAC），接收方要求 seq 严格递增。
+- 三档防御配置：无防御 / 仅 HMAC / 完整防御（签名认证 DH + HMAC + 序号）。
+- 13 个预置场景（`mitmlab/proto/scenarios.py`）：正常通信、密钥替换、冒充、位翻转、重放，以及各自的防御与局限对比。
+
 ## 开发进度
 
-随各阶段提交逐步更新，当前：工程骨架、数论、SHA-256、HMAC/HKDF、AES、RSA、DH 完成。
+随各阶段提交逐步更新，当前：密码算法、协议层与攻防场景完成；CLI、GUI、Bonus 与实验文档进行中。
