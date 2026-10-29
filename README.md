@@ -43,7 +43,8 @@ docs/            实验说明文档
 | `mitmlab/crypto/numtheory.py` | 模幂、扩展欧几里得、模逆、Miller-Rabin、素数生成 | 与内置 `pow`、试除法、pycryptodome `isPrime` 对照；Carmichael 数/强伪素数 |
 | `mitmlab/crypto/sha256.py` | SHA-256（支持增量更新） | FIPS 180-4 标准向量、分组边界、`hashlib` 对照 |
 | `mitmlab/crypto/hmac_hkdf.py` | HMAC-SHA256、HKDF-SHA256 | RFC 4231、RFC 5869 向量；标准库 `hmac` 与 pycryptodome 对照 |
+| `mitmlab/crypto/aes.py` | AES-128/192/256、CBC、PKCS#7 | FIPS 197 附录 A/B/C、SP800-38A ECB/CBC 向量；pycryptodome 随机对照（含库加密、自实现解密） |
 
 ## 开发进度
 
-随各阶段提交逐步更新，当前：工程骨架、数论、SHA-256、HMAC/HKDF 完成。
+随各阶段提交逐步更新，当前：工程骨架、数论、SHA-256、HMAC/HKDF、AES 完成。
