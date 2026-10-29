@@ -36,6 +36,14 @@ tests/           单元测试与场景测试
 docs/            实验说明文档
 ```
 
+## 已实现算法与测试
+
+| 模块 | 内容 | 测试依据 |
+|---|---|---|
+| `mitmlab/crypto/numtheory.py` | 模幂、扩展欧几里得、模逆、Miller-Rabin、素数生成 | 与内置 `pow`、试除法、pycryptodome `isPrime` 对照；Carmichael 数/强伪素数 |
+| `mitmlab/crypto/sha256.py` | SHA-256（支持增量更新） | FIPS 180-4 标准向量、分组边界、`hashlib` 对照 |
+| `mitmlab/crypto/hmac_hkdf.py` | HMAC-SHA256、HKDF-SHA256 | RFC 4231、RFC 5869 向量；标准库 `hmac` 与 pycryptodome 对照 |
+
 ## 开发进度
 
-随各阶段提交逐步更新，当前：工程骨架完成。
+随各阶段提交逐步更新，当前：工程骨架、数论、SHA-256、HMAC/HKDF 完成。
