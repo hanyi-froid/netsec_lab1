@@ -10,6 +10,7 @@
 这类耗时任务在工作线程里运行，结果经 queue.Queue 返回，由 root.after() 轮询并在主线程更新界面。
 """
 
+import sys
 import tkinter as tk
 from collections import deque
 from tkinter import font as tkfont
@@ -300,19 +301,22 @@ class App:
         old = self.tamper_old_var.get()
         return text.replace(old, self.tamper_new_var.get()) if old else text
 
+    def _new_world(self) -> None:
+        base = next((s for s in SCENARIOS if s.title == self.scenario_var.get()), SCENARIOS[0])
+        self._messages = self.alice_text_var.get(), self.bob_text_var.get()
+        script = (("Alice", "handshake", ""), ("Alice", "say", self._messages[0]),
+                  ("Bob", "say", self._messages[1]))
+        self.world = World(base, keyring=self.keyring, profile=self._current_profile(),
+                           evil_mode=self._current_mode(), script=script)
+        self.world.evil.tamper = self._tamper if self.world.evil.mode == EvilMode.MITM else None
+        self.world.log.subscribe(self._on_event)
+
     def reset(self) -> None:
         """按当前配置重建世界并清空显示。"""
         if self.keyring is None:
             return
         self._cancel_autoplay()
-        base = next((s for s in SCENARIOS if s.title == self.scenario_var.get()), SCENARIOS[0])
-        script = (("Alice", "handshake", ""), ("Alice", "say", self.alice_text_var.get()),
-                  ("Bob", "say", self.bob_text_var.get()))
-        mode = self._current_mode()
-        self.world = World(base, keyring=self.keyring, profile=self._current_profile(), evil_mode=mode,
-                           script=script)
-        self.world.evil.tamper = self._tamper if mode == EvilMode.MITM else None
-        self.world.log.subscribe(self._on_event)
+        self._new_world()
         self._finished = False
         self._ops.clear()
         self._evil_arrow_colors.clear()
@@ -322,13 +326,15 @@ class App:
             lbl.configure(text="—", foreground="black")
         self._redraw()
         self._set_controls(True)
-        self.status_var.set(f"已就绪：{self._current_profile().describe()}；Evil：{MODE_LABELS[mode]}")
+        self.status_var.set(f"已就绪：{self.world.profile.describe()}；Evil：{MODE_LABELS[self.world.evil.mode]}")
 
     # ------------------------------------------------------------ 推进与播放
     def step(self) -> bool:
         """推进一步，返回是否还有后续步骤。"""
         if self.world is None or self._finished:
             return False
+        if self.world.steps == 0 and self._messages != (self.alice_text_var.get(), self.bob_text_var.get()):
+            self._new_world()
         what = self.world.step()
         if what is None:
             self._finish()
@@ -522,7 +528,11 @@ class App:
 
 def main(rsa_bits: int = 2048) -> int:
     """启动图形界面。"""
-    root = tk.Tk()
+    try:
+        root = tk.Tk()
+    except tk.TclError as exc:
+        print(f"无法启动图形界面（{exc}）。可使用 python -m mitmlab run normal。", file=sys.stderr)
+        return 1
     app = App(root, rsa_bits=rsa_bits)
 
     def on_close() -> None:

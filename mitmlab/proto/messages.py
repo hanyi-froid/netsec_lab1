@@ -40,7 +40,7 @@ class Message:
 
 def encode(msg: Message) -> bytes:
     """把 Message 序列化为线路字节串。"""
-    if msg.type not in MESSAGE_TYPES:
+    if not isinstance(msg.type, str) or msg.type not in MESSAGE_TYPES:
         raise WireError(f"未知报文类型: {msg.type}")
     fields = {}
     for key, value in msg.fields.items():
@@ -62,11 +62,11 @@ def decode(data: bytes) -> Message:
         raise WireError("报文过大")
     try:
         doc = json.loads(bytes(data).decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise WireError(f"报文不是合法的 JSON: {exc}") from exc
+    except (ValueError, RecursionError) as exc:
+        raise WireError("报文不是可解析的 UTF-8 JSON") from exc
     if not isinstance(doc, dict) or set(doc) != {"type", "from", "to", "fields"}:
         raise WireError("报文结构非法")
-    if doc["type"] not in MESSAGE_TYPES:
+    if not isinstance(doc["type"], str) or doc["type"] not in MESSAGE_TYPES:
         raise WireError(f"未知报文类型: {doc['type']!r}")
     if not isinstance(doc["from"], str) or not isinstance(doc["to"], str):
         raise WireError("from/to 必须是字符串")

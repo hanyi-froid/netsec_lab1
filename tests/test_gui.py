@@ -5,8 +5,14 @@ import gc
 import pathlib
 import threading
 import time
-import tkinter as tk
 import unittest
+
+try:
+    import tkinter as tk
+except ModuleNotFoundError as exc:
+    if exc.name not in {"tkinter", "_tkinter"}:
+        raise
+    tk = None
 
 from mitmlab.gui.worker import BackgroundRunner
 from mitmlab.proto.identities import generate_keyring
@@ -76,6 +82,8 @@ _ROOT = None
 def _shared_root():
     """整个测试模块共用一个 Tk 根窗口：反复创建/销毁 Tk 解释器在 Windows 上偶发初始化失败。"""
     global _ROOT
+    if tk is None:
+        raise unittest.SkipTest("当前 Python 未安装 tkinter")
     if _ROOT is None:
         try:
             _ROOT = tk.Tk()
@@ -87,8 +95,8 @@ def _shared_root():
 
 def _make_app(testcase, **kwargs):
     """创建 App，并在测试结束时关闭它、清理根窗口下的所有控件。"""
-    from mitmlab.gui.app import App
     root = _shared_root()
+    from mitmlab.gui.app import App
 
     def cleanup():
         app.close()
@@ -151,6 +159,17 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.app.key_labels["Alice"].cget("text"), self.app.key_labels["Bob"].cget("text"))
         self.assertEqual(self.app.key_labels["Evil↔Alice"].cget("text"), "—")
         self.assertIn(ALICE_TEXT, self.text_of(self.app.view_text["Bob"]))
+
+    def test_messages_are_read_when_the_demo_starts(self):
+        self.select("defended-normal")
+        self.app.alice_text_var.set("新的 Alice 消息")
+        self.app.bob_text_var.set("新的 Bob 回复")
+        self.assertTrue(self.app.step())
+        self.app.alice_text_var.set("下次演示使用")
+        self.app.run_all_steps()
+
+        self.assertEqual(self.app.world.bob.received, ["新的 Alice 消息"])
+        self.assertEqual(self.app.world.alice.received, ["新的 Bob 回复"])
 
     def test_single_step_advances_one_action_at_a_time(self):
         self.select("normal")

@@ -36,6 +36,8 @@ class WireFormatTests(unittest.TestCase):
         with self.assertRaises(m.WireError):
             m.encode(m.Message("NOPE", "a", "b"))
         with self.assertRaises(m.WireError):
+            m.encode(m.Message([], "a", "b"))
+        with self.assertRaises(m.WireError):
             m.encode(m.Message(m.DATA, "a", "b", {"x": 1.5}))
         with self.assertRaises(m.WireError):
             m.encode(m.Message(m.DATA, "a", "b", {"x": True}))
@@ -45,6 +47,8 @@ class WireFormatTests(unittest.TestCase):
         bad_inputs = [
             b"", b"not json", b"\xff\xfe", b"[]", b"{}",
             good.replace(b'"ALERT"', b'"EVIL"'),
+            good.replace(b'"ALERT"', b'[]'),
+            good.replace(b'"ALERT"', b'{}'),
             good.replace(b'"reason":"x"', b'"reason":{"hex":"zz"}'),
             good.replace(b'"reason":"x"', b'"reason":{"hex":"00","x":1}'),
             good.replace(b'"reason":"x"', b'"reason":true'),
@@ -62,6 +66,7 @@ class WireFormatTests(unittest.TestCase):
 
     def test_describe_handles_garbage(self):
         self.assertIn("无法解析", m.describe(b"garbage"))
+        self.assertIn("无法解析", m.describe(b'{"type":[],"from":"a","to":"b","fields":{}}'))
         self.assertIn("DATA", m.describe(m.encode(m.Message(m.DATA, "A", "B", {"ct": b"\x01" * 40}))))
 
     def test_invalid_utf8_is_escaped_without_replacement_glyphs(self):

@@ -8,31 +8,27 @@
 
 ## 快速开始
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1          # macOS/Linux: source .venv/bin/activate
-pip install -r requirements-dev.txt   # 只运行程序可跳过；测试需要
-python -m mitmlab gui                 # 图形界面（无图形环境用：python -m mitmlab all）
-python -m pytest -q                   # 运行全部测试
-```
-
-## 环境
-
-- Python 3.10+（开发环境 3.13，tkinter 随官方 Python 安装包提供）
-- 运行程序：无第三方依赖
-- 运行测试：`pip install -r requirements-dev.txt`（pycryptodome 仅用于测试对照）
+解压程序包后，进入包含 `README.md` 和 `mitmlab/` 的 `netsec_lab1` 目录。使用 Python 3.10 或以上版本，GUI 需要 tkinter 和图形显示环境。运行程序无需安装第三方包。
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements-dev.txt
+python -m mitmlab run normal           # 正常通信，确认 Alice 与 Bob 的消息和密钥指纹
+python -m mitmlab run defended-normal  # 确认完整防御下仍能正常双向通信
+python -m mitmlab gui                  # 图形界面
 ```
+
+Windows 上如果通过 `py` 启动 Python，可将示例中的 `python` 替换为 `py -3`。Linux 安装的 Python 如缺少 tkinter，可使用命令行或安装发行版提供的 Tk 支持。
 
 ## 测试
 
 ```powershell
-python -m pytest -q
-# 或不装 pytest：
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+macOS/Linux 上虚拟环境的解释器路径为 `./.venv/bin/python`。pycryptodome 仅用于测试对照。无需安装测试依赖时可用标准库运行，库对照和无法启动的 Tk 窗口用例会跳过。
+
+```powershell
 python -m unittest discover -s tests -t .
 ```
 
@@ -59,9 +55,9 @@ docs/            实验说明文档
 
 ## 通信协议与攻防场景（mitmlab/proto）
 
-- 报文经 `messages.encode/decode` 序列化为 JSON bytes，`Network` 只接受 bytes，Evil 是所有流量的网关。
+- 报文经 `messages.encode/decode` 序列化为 UTF-8 JSON 字节，`Network` 在进程内排队投递，Evil 是 Alice 和 Bob 之间的模拟网关。
 - 握手：DH（RFC 3526）+ 可选 RSA 签名（STS 风格，签名绑定身份、DH 公钥与双方 nonce）；会话密钥由 HKDF 派生，A→B / B→A 方向独立。
-- 数据包：`seq ‖ IV ‖ AES-128-CBC ‖ HMAC-SHA256`（先加密后 MAC），接收方要求 seq 严格递增。
+- 数据包包含 `seq`、`IV`、AES-128-CBC 密文和 `mac` 字段。启用 HMAC 时先校验 MAC 再解密。启用防重放时，序号须大于已接收的最大序号。
 - 三档防御配置：无防御 / 仅 HMAC / 完整防御（签名认证 DH + HMAC + 序号）。
 - 13 个预置场景（`mitmlab/proto/scenarios.py`）：正常通信、密钥替换、冒充、位翻转、重放，以及各自的防御与局限对比。
 
@@ -82,6 +78,7 @@ python -m mitmlab gui
 ```
 
 - 顶部选择场景，或手动调整三个防御开关、Evil 行为、双方消息与篡改规则（自定义配置）。
+- 双方消息在演示第一步读取。演示已经开始时，修改消息后点「重置」，再开始下一轮。
 - 「单步」逐步推进，「自动播放」定时推进，「一键运行」直接跑完；「Evil 立即重放」可在通信中途交互式重放数据包。
 - 中间是 Alice | Evil | Bob 三泳道时序图（红色箭头为被 Evil 篡改/伪造的报文），其下是三方各自的视角与会话密钥指纹，右侧是事件日志与结果判定。
 - 「对比全部场景」在后台线程运行全部场景并弹出对照表。RSA 密钥也在后台线程生成；后台任务统一通过 `queue.Queue` + `root.after()` 回到主线程刷新界面。
@@ -95,7 +92,7 @@ python -m mitmlab experiments --csv results    # 对比矩阵 + 重复稳定性 
 python -m mitmlab perf [--quick]               # 算法吞吐、RSA/DH 耗时、握手开销对比
 ```
 
-- 多种攻击与防御方法的对比：`matrix` 显示“仅 HMAC”只能挡位翻转、挡不住密钥替换/冒充/重放，只有签名认证 DH + 序号才能全部阻止。
+- `matrix` 比较三档配置。仅 HMAC 的配置可拒绝密文位翻转。完整配置结合签名认证 DH、HMAC 和序号检查，覆盖矩阵中的四种攻击。
 - 重放攻击及防御：`replay`、`mac-vs-replay`、`defended-replay` 三个场景。
 - 单步执行与可视化：CLI `--step`、GUI 单步/自动播放/泳道图。
 - 自动化实验、异常情况模拟、性能分析：`experiments` 与 `perf`（丢包/重复/乱序由带种子的伪随机数注入，可复现）。
@@ -103,7 +100,7 @@ python -m mitmlab perf [--quick]               # 算法吞吐、RSA/DH 耗时、
 ## 文档与说明
 
 - 完整实验说明文档：[docs/实验说明文档.md](docs/实验说明文档.md)（运行环境、功能实现与测试说明、开发过程与 AI 使用记录）。
-- 红线：`mitmlab/` 内不调用任何密码库，`tests/test_no_banned_imports.py` 用 AST 扫描自动检查；pycryptodome、`hashlib`、`hmac` 只在测试中用于对照。
+- `tests/test_no_banned_imports.py` 以 AST 扫描检查 `mitmlab/` 的密码库导入。pycryptodome、`hashlib`、`hmac` 的测试代码只用于独立校验。
 - 说明：算法为纯 Python 的教学实现，非常数时间，不可用于生产环境。
 
 ![无防御的密钥替换](docs/img/gui-mitm.png)

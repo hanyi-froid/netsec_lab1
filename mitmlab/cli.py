@@ -145,7 +145,14 @@ def cmd_perf(args) -> int:
 
 
 def cmd_gui(args) -> int:
-    from .gui.app import main as gui_main  # 延迟导入：无 tkinter 的环境仍可使用 CLI
+    try:
+        from .gui.app import main as gui_main
+    except ModuleNotFoundError as exc:
+        if exc.name not in {"tkinter", "_tkinter"}:
+            raise
+        print("图形界面需要 tkinter。可以先用 python -m mitmlab run normal 启动命令行演示。",
+              file=sys.stderr)
+        return 1
     return gui_main(rsa_bits=args.rsa_bits)
 
 
