@@ -6,6 +6,7 @@ import pathlib
 import threading
 import time
 import unittest
+from unittest.mock import patch
 
 try:
     import tkinter as tk
@@ -126,6 +127,23 @@ class GuiTests(unittest.TestCase):
         self.assertEqual(self.app.scenario_var.get(), SCENARIO_BY_ID["normal"].title)
         self.assertIsNotNone(self.app.world)
 
+    def test_run_button_shows_result_and_runs_again_with_updated_message(self):
+        self.select("normal")
+        self.app.buttons["run"].invoke()
+        first_world = self.app.world
+        self.assertTrue(self.app._finished)
+        self.assertEqual(self.app.inspector.select(), str(self.app.result_panel))
+        self.assertIn(ALICE_TEXT, self.text_of(self.app.result_text))
+
+        self.app.inspector.select(self.app.log_panel)
+        self.app.alice_text_var.set("第二次运行的消息")
+        self.app.buttons["run"].invoke()
+        self.assertIsNot(self.app.world, first_world)
+        self.assertEqual(self.app.world.bob.received, ["第二次运行的消息"])
+        self.assertEqual(self.app.inspector.select(), str(self.app.result_panel))
+        self.assertNotIn(ALICE_TEXT, self.text_of(self.app.result_text))
+        self.assertIn("第二次运行的消息", self.text_of(self.app.result_text))
+
     def test_mitm_run_shows_attack_in_every_panel(self):
         self.select("mitm")
         self.app.run_all_steps()
@@ -166,7 +184,7 @@ class GuiTests(unittest.TestCase):
         self.app.bob_text_var.set("新的 Bob 回复")
         self.assertTrue(self.app.step())
         self.app.alice_text_var.set("下次演示使用")
-        self.app.run_all_steps()
+        self.app.buttons["run"].invoke()
 
         self.assertEqual(self.app.world.bob.received, ["新的 Alice 消息"])
         self.assertEqual(self.app.world.alice.received, ["新的 Bob 回复"])
@@ -227,14 +245,53 @@ class GuiTests(unittest.TestCase):
 
     def test_autoplay_runs_to_completion(self):
         from mitmlab.gui import app as app_module
-        app_module.AUTOPLAY_MS = 1
-        self.select("normal")
-        self.app.toggle_autoplay()
-        end = time.time() + 20
-        while not self.app._finished and time.time() < end:
-            self.root.update()
-            time.sleep(0.002)
+        self.app.buttons["run"].invoke()
+        previous_world = self.app.world
+        self.assertTrue(self.app.buttons["step"].instate(["disabled"]))
+        auto = self.app.buttons["auto"]
+        with patch.object(app_module, "AUTOPLAY_MS", 1):
+            auto.invoke()
+            self.assertIsNot(self.app.world, previous_world)
+            auto.invoke()
+            self.assertIsNone(self.app._autoplay_job)
+            self.assertEqual(self.app.phase_var.get(), "已暂停")
+            paused_world = self.app.world
+            auto.invoke()
+            self.assertIs(self.app.world, paused_world)
+            end = time.time() + 20
+            while not self.app._finished and time.time() < end:
+                self.root.update()
+                time.sleep(0.002)
         self.assertTrue(self.app._finished)
+        self.assertEqual(auto.cget("text"), "自动播放")
+
+    def test_comparison_failure_does_not_interrupt_key_generation(self):
+        buttons = self.app.buttons
+        with patch.object(self.app.runner, "submit") as submit:
+            buttons["compare"].invoke()
+            comparison_error = submit.call_args.args[2]
+            buttons["reset"].invoke()
+            self.assertTrue(buttons["compare"].instate(["disabled"]))
+            buttons["compare"].invoke()
+            self.assertEqual(submit.call_count, 1)
+
+            buttons["auto"].invoke()
+            self.assertIsNotNone(self.app._autoplay_job)
+            buttons["keys"].invoke()
+            self.assertIsNone(self.app._autoplay_job)
+            self.assertTrue(buttons["run"].instate(["disabled"]))
+            self.assertTrue(buttons["keys"].instate(["disabled"]))
+            keys_ready = submit.call_args.args[1]
+            with patch("mitmlab.gui.app.messagebox.showerror") as showerror:
+                comparison_error(RuntimeError("对比任务出错"))
+                showerror.assert_called_once()
+            self.assertTrue(buttons["keys"].instate(["disabled"]))
+            self.assertTrue(buttons["compare"].instate(["disabled"]))
+
+            keys_ready(KEYRING)
+            self.assertTrue(buttons["run"].instate(["!disabled"]))
+            self.assertTrue(buttons["compare"].instate(["!disabled"]))
+            self.assertEqual(self.app.world.steps, 0)
 
     def test_compare_all_in_background(self):
         self.app.compare_all()
@@ -266,6 +323,8 @@ class GuiKeyGenerationTests(unittest.TestCase):
         app = _make_app(self, rsa_bits=1024)
         self.assertIsNone(app.keyring)
         self.assertTrue(app.buttons["run"].instate(["disabled"]))
+        app.auth_var.set(True)
+        app._on_config_changed()
         end = time.time() + 60
         while app.keyring is None and time.time() < end:
             root.update()
@@ -274,6 +333,7 @@ class GuiKeyGenerationTests(unittest.TestCase):
         self.assertEqual(calls, [main_thread])  # 回调始终在主线程执行
         self.assertTrue(app.buttons["run"].instate(["!disabled"]))
         self.assertIsNotNone(app.world)
+        self.assertTrue(app.world.profile.auth_kex)
 
 
 if __name__ == "__main__":
